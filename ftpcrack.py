@@ -107,10 +107,15 @@ if not passwords or not user or not host:
 	parser.print_help()
 	exit()
 
-connection = FTP(host, timeout=2)
-wlcmsg = connection.getwelcome()
-print wlcmsg
-print
+try:
+	connection = FTP(host, timeout=2)
+	wlcmsg = connection.getwelcome()
+	print wlcmsg
+	print
+except:
+	print " [X] Error: it doesn't look like " + str(host) + " is an FTP server.."
+	print
+	exit()
 
 print " [*] Loading " + str(len(passwords)) + " passwords to try.."
 
@@ -119,6 +124,7 @@ workQueue = Queue.Queue(len(passwords))
 queueLock.acquire()
 for passw in passwords:
     workQueue.put(passw)
+queueLock.release()
 
 while threadID <= maxthreads:
 	tname = str("Thread-") + str(threadID)
@@ -130,7 +136,6 @@ while threadID <= maxthreads:
 startcnt = time.time()
 print " [*] Starting attack on " + str(user) + "@" + str(host) + " with " + str(maxthreads) + " threads."
 print
-queueLock.release()
 
 with Timer():
 	while not workQueue.empty():
