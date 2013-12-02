@@ -59,7 +59,7 @@ def killpid(signum = 0, frame = 0):
 	print "\r\x1b[K"
 	os.kill(os.getpid(), 9)
 
-parser = argparse.ArgumentParser(prog='ftpcrawler', usage='ftpcrawler [options]')
+parser = argparse.ArgumentParser(prog='ftpcrack', usage='ftpcrack [options]')
 parser.add_argument('-t', "--threads", type=int, help='number of threads (default: 100)')
 parser.add_argument('-i', "--ip", type=str, help='host to attack')
 parser.add_argument('-u', "--user", type=str, help='username to attack')
